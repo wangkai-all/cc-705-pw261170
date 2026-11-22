@@ -1,0 +1,301 @@
+DEMO-TABLE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Counter64, Gauge32, TimeTicks,
+    Integer32, IpAddress, Unsigned32, enterprises
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, DisplayString, PhysAddress, TruthValue
+        FROM SNMPv2-TC;
+
+demoTableMIB MODULE-IDENTITY
+    LAST-UPDATED "202601010000Z"
+    ORGANIZATION "SNMP Table Studio"
+    CONTACT-INFO "local demo only"
+    DESCRIPTION  "Tables used by the local SNMP table collection demo."
+    ::= { enterprises 32473 }
+
+DemoMacAddress ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION "A fixed-length six octet MAC address used as a table index."
+    SYNTAX      OCTET STRING (SIZE (6))
+
+demoObjects OBJECT IDENTIFIER ::= { demoTableMIB 1 }
+
+-- ------------------------------------------------------------------
+-- Device table: single integer index, Counter64 values
+-- ------------------------------------------------------------------
+demoDeviceTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF DemoDeviceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A table of demo devices."
+    ::= { demoObjects 1 }
+
+demoDeviceEntry OBJECT-TYPE
+    SYNTAX      DemoDeviceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A row in demoDeviceTable."
+    INDEX       { demoDeviceIndex }
+    ::= { demoDeviceTable 1 }
+
+DemoDeviceEntry ::= SEQUENCE {
+    demoDeviceIndex   Integer32,
+    demoDeviceName    DisplayString,
+    demoDeviceStatus  INTEGER,
+    demoDeviceRxBytes Counter64,
+    demoDeviceTxBytes Counter64,
+    demoDeviceLoad    Gauge32,
+    demoDeviceUptime  TimeTicks,
+    demoDeviceAddress PhysAddress,
+    demoDeviceLabel   DisplayString
+}
+
+demoDeviceIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Unique device index."
+    ::= { demoDeviceEntry 1 }
+
+demoDeviceName OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Device name."
+    ::= { demoDeviceEntry 2 }
+
+demoDeviceStatus OBJECT-TYPE
+    SYNTAX      INTEGER { up(1), down(2), degraded(3), maintenance(4) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Operational status."
+    ::= { demoDeviceEntry 3 }
+
+demoDeviceRxBytes OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Received bytes, 64 bit."
+    ::= { demoDeviceEntry 4 }
+
+demoDeviceTxBytes OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Transmitted bytes, 64 bit."
+    ::= { demoDeviceEntry 5 }
+
+demoDeviceLoad OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Current load percentage."
+    ::= { demoDeviceEntry 6 }
+
+demoDeviceUptime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Uptime in hundredths of a second."
+    ::= { demoDeviceEntry 7 }
+
+demoDeviceAddress OBJECT-TYPE
+    SYNTAX      PhysAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Primary interface address."
+    ::= { demoDeviceEntry 8 }
+
+demoDeviceLabel OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Free-form label, may contain UTF-8 text."
+    ::= { demoDeviceEntry 9 }
+
+-- ------------------------------------------------------------------
+-- Sensor table: composite index, variable length OCTET STRING
+-- with a leading length sub-identifier.
+-- ------------------------------------------------------------------
+demoSensorTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF DemoSensorEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A table of sensors."
+    ::= { demoObjects 2 }
+
+demoSensorEntry OBJECT-TYPE
+    SYNTAX      DemoSensorEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A row in demoSensorTable."
+    INDEX       { demoSensorSlot, demoSensorName }
+    ::= { demoSensorTable 1 }
+
+DemoSensorEntry ::= SEQUENCE {
+    demoSensorSlot     Integer32,
+    demoSensorName     OCTET STRING,
+    demoSensorValue    Integer32,
+    demoSensorUnit     DisplayString,
+    demoSensorValid    TruthValue,
+    demoSensorSamples  Counter64
+}
+
+demoSensorSlot OBJECT-TYPE
+    SYNTAX      Integer32 (1..64)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Slot holding the sensor."
+    ::= { demoSensorEntry 1 }
+
+demoSensorName OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (1..24))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Sensor name, used as the second index component."
+    ::= { demoSensorEntry 2 }
+
+demoSensorValue OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Current reading."
+    ::= { demoSensorEntry 3 }
+
+demoSensorUnit OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Unit of the reading."
+    ::= { demoSensorEntry 4 }
+
+demoSensorValid OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Whether the last reading was valid."
+    ::= { demoSensorEntry 5 }
+
+demoSensorSamples OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Number of samples taken."
+    ::= { demoSensorEntry 6 }
+
+-- ------------------------------------------------------------------
+-- Tunnel table: composite index with an IMPLIED OCTET STRING tail
+-- ------------------------------------------------------------------
+demoTunnelTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF DemoTunnelEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A table of tunnels."
+    ::= { demoObjects 3 }
+
+demoTunnelEntry OBJECT-TYPE
+    SYNTAX      DemoTunnelEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A row in demoTunnelTable."
+    INDEX       { demoTunnelLocal, IMPLIED demoTunnelPeer }
+    ::= { demoTunnelTable 1 }
+
+DemoTunnelEntry ::= SEQUENCE {
+    demoTunnelLocal   IpAddress,
+    demoTunnelPeer    OCTET STRING,
+    demoTunnelState   INTEGER,
+    demoTunnelLatency Gauge32,
+    demoTunnelPackets Counter64
+}
+
+demoTunnelLocal OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Local tunnel address."
+    ::= { demoTunnelEntry 1 }
+
+demoTunnelPeer OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (1..24))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Peer name, IMPLIED as the final index component."
+    ::= { demoTunnelEntry 2 }
+
+demoTunnelState OBJECT-TYPE
+    SYNTAX      INTEGER { down(0), up(1), testing(2) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Tunnel state."
+    ::= { demoTunnelEntry 3 }
+
+demoTunnelLatency OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Round trip latency in microseconds."
+    ::= { demoTunnelEntry 4 }
+
+demoTunnelPackets OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Packets forwarded."
+    ::= { demoTunnelEntry 5 }
+
+-- ------------------------------------------------------------------
+-- MAC table: fixed length OCTET STRING index, no length prefix
+-- ------------------------------------------------------------------
+demoMacTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF DemoMacEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A table indexed by a fixed length MAC address."
+    ::= { demoObjects 4 }
+
+demoMacEntry OBJECT-TYPE
+    SYNTAX      DemoMacEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "A row in demoMacTable."
+    INDEX       { demoMacAddress }
+    ::= { demoMacTable 1 }
+
+DemoMacEntry ::= SEQUENCE {
+    demoMacAddress DemoMacAddress,
+    demoMacVlan    Integer32,
+    demoMacPort    DisplayString,
+    demoMacSeen    Counter64
+}
+
+demoMacAddress OBJECT-TYPE
+    SYNTAX      DemoMacAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "MAC address, fixed six octet index."
+    ::= { demoMacEntry 1 }
+
+demoMacVlan OBJECT-TYPE
+    SYNTAX      Integer32 (0..4095)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "VLAN identifier."
+    ::= { demoMacEntry 2 }
+
+demoMacPort OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Port name."
+    ::= { demoMacEntry 3 }
+
+demoMacSeen OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION "Frames seen from this address."
+    ::= { demoMacEntry 4 }
+
+END
